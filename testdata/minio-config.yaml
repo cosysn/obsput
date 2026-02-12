@@ -1,0 +1,6 @@
+configs:
+  - name: minio-local
+    endpoint: "localhost:9000"
+    bucket: "test-bucket"
+    ak: "admin"
+    sk: "password"
