@@ -100,9 +100,4 @@ func NewUploadCommand() *cobra.Command {
 	return cmd
 }
 
-func getConfigPath() string {
-	home, _ := os.UserHomeDir()
-	return home + "/.obsput.yaml"
-}
-
 func init() {}

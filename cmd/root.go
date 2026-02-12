@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"obsput/pkg/config"
+
 	"github.com/spf13/cobra"
 )
 
@@ -30,4 +32,14 @@ func Execute() {
 	if err := cmd.Execute(); err != nil {
 		panic(err)
 	}
+}
+
+func getConfigPath() string {
+	path, _ := config.GetConfigPath()
+	return path
+}
+
+func getConfigDir() string {
+	dir, _ := config.GetConfigDir()
+	return dir
 }
