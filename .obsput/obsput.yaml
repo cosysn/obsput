@@ -1,1 +1,7 @@
-configs: {}
+configs:
+    prod:
+        name: prod
+        endpoint: obs.xxx.com
+        bucket: bucket
+        ak: xxx
+        sk: xxx

@@ -9,9 +9,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	huaweicloudsdkobs "github.com/huaweicloud/huaweicloud-sdk-go-obs/obs"
 )
@@ -51,6 +53,24 @@ func (c *Client) ensureConnected() error {
 	return nil
 }
 
+// testTCPConnection tests if we can establish a TCP connection to the endpoint
+func (c *Client) testTCPConnection() error {
+	// Extract hostname from endpoint (format: hostname:port or just hostname)
+	host := c.Endpoint
+	// Add default port if not specified
+	if !strings.Contains(host, ":") {
+		host = host + ":443"
+	}
+
+	// Set a short timeout for the connection test
+	conn, err := net.DialTimeout("tcp", host, 3*time.Second)
+	if err != nil {
+		return fmt.Errorf("cannot connect to OBS endpoint %s: %v", c.Endpoint, err)
+	}
+	defer conn.Close()
+	return nil
+}
+
 type progressListener struct {
 	callback func(transferred int64)
 	total    int64
@@ -63,6 +83,14 @@ func (p *progressListener) ProgressChanged(event *huaweicloudsdkobs.ProgressEven
 }
 
 func (c *Client) UploadFile(filePath, version, prefix string, progressCallback func(transferred int64)) (*UploadResult, error) {
+	// Test TCP connection first
+	if err := c.testTCPConnection(); err != nil {
+		return &UploadResult{
+			Success: false,
+			Error:   err.Error(),
+		}, nil
+	}
+
 	// Ensure connected
 	if err := c.ensureConnected(); err != nil {
 		return &UploadResult{
@@ -145,6 +173,14 @@ func (c *Client) UploadFile(filePath, version, prefix string, progressCallback f
 }
 
 func (c *Client) DeleteVersion(version string) *DeleteResult {
+	// Test TCP connection first
+	if err := c.testTCPConnection(); err != nil {
+		return &DeleteResult{
+			Success: false,
+			Error:   err.Error(),
+		}
+	}
+
 	// Ensure connected
 	if err := c.ensureConnected(); err != nil {
 		return &DeleteResult{
@@ -191,6 +227,11 @@ func (c *Client) DeleteVersion(version string) *DeleteResult {
 }
 
 func (c *Client) ListVersions(prefix string) ([]VersionInfo, error) {
+	// Test TCP connection first
+	if err := c.testTCPConnection(); err != nil {
+		return nil, fmt.Errorf("%v", err)
+	}
+
 	// Ensure connected
 	if err := c.ensureConnected(); err != nil {
 		return nil, err
