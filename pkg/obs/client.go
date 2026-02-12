@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	huaweicloudsdkobs "github.com/huaweicloud/huaweicloud-sdk-go-obs/obs"
@@ -33,7 +34,9 @@ func NewClient(endpoint, bucket, ak, sk string) *Client {
 }
 
 func (c *Client) Connect() error {
-	obsClient, err := huaweicloudsdkobs.New(c.Endpoint, c.AK, c.SK)
+	obsClient, err := huaweicloudsdkobs.New(c.AK, c.SK, c.Endpoint,
+		huaweicloudsdkobs.WithPathStyle(true),
+	)
 	if err != nil {
 		return err
 	}
@@ -41,17 +44,35 @@ func (c *Client) Connect() error {
 	return nil
 }
 
-func (c *Client) UploadFile(filePath, version, prefix string, progressCallback ProgressCallback) (*UploadResult, error) {
-	filename := extractFilename(filePath)
-	key := c.GetUploadKey(prefix, version, filename)
+func (c *Client) ensureConnected() error {
+	if c.client == nil {
+		return c.Connect()
+	}
+	return nil
+}
 
-	md5Hash, err := c.CalculateMD5FromFile(filePath)
-	if err != nil {
+type progressListener struct {
+	callback func(transferred int64)
+	total    int64
+}
+
+func (p *progressListener) ProgressChanged(event *huaweicloudsdkobs.ProgressEvent) {
+	if p.callback != nil {
+		p.callback(event.ConsumedBytes)
+	}
+}
+
+func (c *Client) UploadFile(filePath, version, prefix string, progressCallback func(transferred int64)) (*UploadResult, error) {
+	// Ensure connected
+	if err := c.ensureConnected(); err != nil {
 		return &UploadResult{
 			Success: false,
 			Error:   err.Error(),
 		}, nil
 	}
+
+	filename := extractFilename(filePath)
+	key := c.GetUploadKey(prefix, version, filename)
 
 	// Get file size for progress reporting
 	fileInfo, err := os.Stat(filePath)
@@ -62,22 +83,107 @@ func (c *Client) UploadFile(filePath, version, prefix string, progressCallback P
 		}, nil
 	}
 
-	// Simulate progress callback for testing
-	if progressCallback != nil {
-		progressCallback(fileInfo.Size())
+	// Read file content
+	file, err := os.Open(filePath)
+	if err != nil {
+		return &UploadResult{
+			Success: false,
+			Error:   err.Error(),
+		}, nil
+	}
+	defer file.Close()
+
+	content, err := io.ReadAll(file)
+	if err != nil {
+		return &UploadResult{
+			Success: false,
+			Error:   err.Error(),
+		}, nil
+	}
+
+	// Calculate MD5
+	md5Hash := c.CalculateMD5(content)
+
+	// Create put object input
+	input := &huaweicloudsdkobs.PutObjectInput{
+		PutObjectBasicInput: huaweicloudsdkobs.PutObjectBasicInput{
+			ObjectOperationInput: huaweicloudsdkobs.ObjectOperationInput{
+				Bucket: c.Bucket,
+				Key:    key,
+			},
+			ContentMD5:     md5Hash,
+			ContentLength: int64(len(content)),
+		},
+		Body: bytes.NewReader(content),
+	}
+
+	// Upload to OBS
+	output, err := c.client.PutObject(input)
+	if err != nil {
+		return &UploadResult{
+			Success: false,
+			Error:   err.Error(),
+		}, nil
+	}
+
+	// Check response status
+	if output.StatusCode < 200 || output.StatusCode >= 300 {
+		return &UploadResult{
+			Success: false,
+			Error:   fmt.Sprintf("upload failed with status: %d", output.StatusCode),
+		}, nil
 	}
 
 	return &UploadResult{
 		Success:  true,
 		Version:  version,
-		URL:      c.GetDownloadURL(key),
-		MD5:      md5Hash,
-		Size:     fileInfo.Size(),
-		OBSName:  c.Bucket,
+		URL:     c.GetDownloadURL(key),
+		MD5:     md5Hash,
+		Size:    fileInfo.Size(),
+		OBSName: c.Bucket,
 	}, nil
 }
 
 func (c *Client) DeleteVersion(version string) *DeleteResult {
+	// Ensure connected
+	if err := c.ensureConnected(); err != nil {
+		return &DeleteResult{
+			Success: false,
+			Error:   err.Error(),
+		}
+	}
+
+	// Find the object with this version prefix
+	input := &huaweicloudsdkobs.ListObjectsInput{
+		ListObjsInput: huaweicloudsdkobs.ListObjsInput{
+			Prefix: version,
+		},
+		Bucket: c.Bucket,
+	}
+
+	output, err := c.client.ListObjects(input)
+	if err != nil {
+		return &DeleteResult{
+			Success: false,
+			Error:   err.Error(),
+		}
+	}
+
+	// Delete each object with this version
+	for _, obj := range output.Contents {
+		deleteInput := &huaweicloudsdkobs.DeleteObjectInput{
+			Bucket: c.Bucket,
+			Key:    obj.Key,
+		}
+		_, err := c.client.DeleteObject(deleteInput)
+		if err != nil {
+			return &DeleteResult{
+				Success: false,
+				Error:   fmt.Sprintf("failed to delete %s: %v", obj.Key, err),
+			}
+		}
+	}
+
 	return &DeleteResult{
 		Success: true,
 		Version: version,
@@ -85,16 +191,50 @@ func (c *Client) DeleteVersion(version string) *DeleteResult {
 }
 
 func (c *Client) ListVersions(prefix string) ([]VersionInfo, error) {
-	return []VersionInfo{
-		{
-			Key:     "v1.0.0-abc123-20260212-143000/app",
-			Size:    "12.5MB",
-			Date:    "2026-02-12",
-			Commit:  "abc123",
-			Version: "v1.0.0-abc123-20260212-143000",
-			URL:     c.GetDownloadURL("v1.0.0-abc123-20260212-143000/app"),
-		},
-	}, nil
+	// Ensure connected
+	if err := c.ensureConnected(); err != nil {
+		return nil, err
+	}
+
+	var allObjects []VersionInfo
+	marker := ""
+
+	for {
+		input := &huaweicloudsdkobs.ListObjectsInput{
+			ListObjsInput: huaweicloudsdkobs.ListObjsInput{
+				Prefix: prefix,
+			},
+			Bucket: c.Bucket,
+			Marker: marker,
+		}
+
+		output, err := c.client.ListObjects(input)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, obj := range output.Contents {
+			version := c.ParseVersionFromPath(obj.Key)
+			if version != "" {
+				allObjects = append(allObjects, VersionInfo{
+					Key:     obj.Key,
+					Size:    formatSize(obj.Size),
+					Date:    obj.LastModified.Format("2006-01-02"),
+					Commit:  c.extractCommitFromVersion(version),
+					Version: version,
+					URL:     c.GetDownloadURL(obj.Key),
+				})
+			}
+		}
+
+		// Check if there are more results
+		if !output.IsTruncated {
+			break
+		}
+		marker = output.NextMarker
+	}
+
+	return allObjects, nil
 }
 
 func (c *Client) GetUploadKey(prefix, version, filename string) string {
@@ -127,10 +267,6 @@ func (c *Client) GetDownloadURL(key string) string {
 	return fmt.Sprintf("https://%s.%s/%s", c.Bucket, c.Endpoint, key)
 }
 
-func (c *Client) UploadURL(key string) string {
-	return fmt.Sprintf("https://%s.%s/%s", c.Bucket, c.Endpoint, key)
-}
-
 func (c *Client) ParseVersionFromPath(path string) string {
 	path = strings.TrimSuffix(path, "/")
 	parts := strings.Split(path, "/")
@@ -139,22 +275,33 @@ func (c *Client) ParseVersionFromPath(path string) string {
 			return parts[i]
 		}
 	}
-	return path
+	return ""
 }
 
-func (v *VersionInfo) GetVersion() string {
-	parts := strings.Split(v.Key, "/")
-	for i := len(parts) - 1; i >= 0; i-- {
-		if strings.HasPrefix(parts[i], "v") && strings.Contains(parts[i], "-") {
-			return parts[i]
-		}
+func (c *Client) extractCommitFromVersion(version string) string {
+	// Version format: v1.0.0-commit-date-time
+	parts := strings.Split(version, "-")
+	if len(parts) >= 2 {
+		return parts[1]
 	}
 	return ""
 }
 
 func extractFilename(path string) string {
-	parts := bytes.Split([]byte(path), []byte("/"))
-	return string(parts[len(parts)-1])
+	return filepath.Base(path)
+}
+
+func formatSize(size int64) string {
+	if size < 1024 {
+		return fmt.Sprintf("%d B", size)
+	}
+	if size < 1024*1024 {
+		return fmt.Sprintf("%.1f KB", float64(size)/1024)
+	}
+	if size < 1024*1024*1024 {
+		return fmt.Sprintf("%.1f MB", float64(size)/(1024*1024))
+	}
+	return fmt.Sprintf("%.1f GB", float64(size)/(1024*1024*1024))
 }
 
 type UploadResult struct {
@@ -173,13 +320,11 @@ type DeleteResult struct {
 	Error   string
 }
 
-type ProgressCallback func(transferred int64)
-
 type VersionInfo struct {
-	Key      string
-	Size     string
-	Date     string
-	Commit   string
-	Version  string
-	URL      string
+	Key     string
+	Size    string
+	Date    string
+	Commit  string
+	Version string
+	URL     string
 }

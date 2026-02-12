@@ -34,7 +34,8 @@
       "Bash(docker:*)",
       "Bash(grep:*)",
       "Bash(go run:*)",
-      "Bash(./obsput:*)"
+      "Bash(./obsput:*)",
+      "Bash(go doc:*)"
     ]
   }
 }

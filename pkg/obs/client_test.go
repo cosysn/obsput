@@ -17,7 +17,7 @@ func TestNewClient(t *testing.T) {
 func TestUploadURL(t *testing.T) {
 	client := NewClient("obs.test.com", "bucket", "ak", "sk")
 
-	url := client.UploadURL("path/to/file.bin")
+	url := client.GetDownloadURL("path/to/file.bin")
 	expected := "https://bucket.obs.test.com/path/to/file.bin"
 
 	if url != expected {
