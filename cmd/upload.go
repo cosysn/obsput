@@ -68,7 +68,4 @@ func getConfigPath() string {
 	return home + "/.obsput.yaml"
 }
 
-func init() {
-	root := NewRootCommand()
-	root.AddCommand(NewUploadCommand())
-}
+func init() {}

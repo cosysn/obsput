@@ -58,7 +58,4 @@ func NewDownloadCommand() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	root := NewRootCommand()
-	root.AddCommand(NewDownloadCommand())
-}
+func init() {}

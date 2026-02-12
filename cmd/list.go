@@ -60,7 +60,4 @@ func NewListCommand() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	root := NewRootCommand()
-	root.AddCommand(NewListCommand())
-}
+func init() {}

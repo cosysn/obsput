@@ -18,6 +18,10 @@ func NewRootCommand() *cobra.Command {
 		},
 	}
 	cmd.AddCommand(NewOBSCommand())
+	cmd.AddCommand(NewUploadCommand())
+	cmd.AddCommand(NewListCommand())
+	cmd.AddCommand(NewDeleteCommand())
+	cmd.AddCommand(NewDownloadCommand())
 	return cmd
 }
 

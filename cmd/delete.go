@@ -49,7 +49,4 @@ func NewDeleteCommand() *cobra.Command {
 	return cmd
 }
 
-func init() {
-	root := NewRootCommand()
-	root.AddCommand(NewDeleteCommand())
-}
+func init() {}
