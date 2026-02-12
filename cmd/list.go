@@ -45,12 +45,14 @@ func NewListCommand() *cobra.Command {
 			formatter := output.NewFormatter()
 
 			for name, obsCfg := range configsToUse {
-				cmd.Printf("[%s]\n", name)
+				cmd.Println()
+				cmd.Printf("  [%s]\n", name)
+				cmd.Println()
 
 				client := obsclient.NewClient(obsCfg.Endpoint, obsCfg.Bucket, obsCfg.AK, obsCfg.SK)
 				versions, err := client.ListVersions("")
 				if err != nil {
-					cmd.Printf("Error: %v\n", err)
+					cmd.Printf("  Error: %v\n", err)
 					continue
 				}
 

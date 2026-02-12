@@ -11,6 +11,7 @@ import (
 	versionpkg "obsput/pkg/version"
 	"obsput/pkg/progress"
 
+	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 )
 
@@ -60,9 +61,10 @@ func NewPutCommand() *cobra.Command {
 				configsToUse = cfg.Configs
 			}
 
-			// Put to selected configs
-			cmd.Println("Putting:", filePath)
-			cmd.Println("Version:", ver)
+			// Print header
+			cmd.Println()
+			cmd.Println("  File:", filePath)
+			cmd.Println("  Version:", ver)
 			cmd.Println()
 
 			// Create progress bar
@@ -74,7 +76,7 @@ func NewPutCommand() *cobra.Command {
 			failCount := 0
 
 			for name, obsCfg := range configsToUse {
-				cmd.Printf("[%s]\n", name)
+				cmd.Printf("  [%s]\n", name)
 
 				client := obs.NewClient(obsCfg.Endpoint, obsCfg.Bucket, obsCfg.AK, obsCfg.SK)
 
@@ -90,20 +92,26 @@ func NewPutCommand() *cobra.Command {
 				cmd.Println()
 
 				if err != nil {
-					cmd.Printf("  Failed: %v\n", err)
+					cmd.Printf("    Failed: %v\n", err)
 					failCount++
 					continue
 				}
 
 				if result.Success {
-					cmd.Printf("  Put: %s\n", result.URL)
-					cmd.Printf("  MD5: %s\n", result.MD5)
-					cmd.Printf("  Size: %s\n", formatter.FormatSize(result.Size))
+					// Print result in a nice table format
+					t := table.NewWriter()
+					t.SetOutputMirror(cmd.OutOrStdout())
+					t.AppendHeader(table.Row{"Field", "Value"})
+					t.AppendRow(table.Row{"URL", result.URL})
+					t.AppendRow(table.Row{"MD5", result.MD5})
+					t.AppendRow(table.Row{"Size", formatter.FormatSize(result.Size)})
 					if result.Size > 0 {
 						elapsed := time.Since(startTime)
 						speed := float64(result.Size) / elapsed.Seconds()
-						cmd.Printf("  Speed: %s/s\n", formatter.FormatSize(int64(speed)))
+						t.AppendRow(table.Row{"Speed", formatter.FormatSize(int64(speed)) + "/s"})
 					}
+					t.Render()
+
 					// Show download commands
 					cmd.Println()
 					cmd.Println("  Download:")
@@ -111,7 +119,7 @@ func NewPutCommand() *cobra.Command {
 					cmd.Printf("    curl -L %s -o <filename>\n", result.URL)
 					successCount++
 				} else {
-					cmd.Printf("  Failed: %s\n", result.Error)
+					cmd.Printf("    Failed: %s\n", result.Error)
 					failCount++
 				}
 				cmd.Println()

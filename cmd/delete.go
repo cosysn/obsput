@@ -6,6 +6,7 @@ import (
 	"obsput/pkg/config"
 	obsclient "obsput/pkg/obs"
 
+	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 )
 
@@ -28,23 +29,40 @@ func NewDeleteCommand() *cobra.Command {
 				return fmt.Errorf("No OBS configurations configured\n\nConfig file: %s\n\nAdd OBS:\n  obsput obs add --name prod --endpoint \"obs.xxx.com\" --bucket \"bucket\" --ak \"xxx\" --sk \"xxx\"", getConfigPath())
 			}
 
+			cmd.Println()
+			cmd.Println("  Version:", version)
+			cmd.Println()
+
+			deletedCount := 0
+			failedCount := 0
+
 			for name, obsCfg := range cfg.Configs {
 				// If profile specified, only delete from that OBS
 				if profile != "" && name != profile {
 					continue
 				}
 
-				cmd.Printf("[%s] Deleting %s...\n", name, version)
+				cmd.Printf("  [%s]\n", name)
 
 				client := obsclient.NewClient(obsCfg.Endpoint, obsCfg.Bucket, obsCfg.AK, obsCfg.SK)
 				result := client.DeleteVersion(version)
 
+				t := table.NewWriter()
+				t.SetOutputMirror(cmd.OutOrStdout())
+				t.AppendHeader(table.Row{"Field", "Value"})
 				if result.Success {
-					cmd.Printf("[%s] Deleted: %s\n", name, version)
+					t.AppendRow(table.Row{"Status", "Deleted"})
+					deletedCount++
 				} else {
-					cmd.Printf("[%s] Failed: %s\n", name, result.Error)
+					t.AppendRow(table.Row{"Status", "Failed"})
+					t.AppendRow(table.Row{"Error", result.Error})
+					failedCount++
 				}
+				t.Render()
+				cmd.Println()
 			}
+
+			cmd.Printf("%d deleted, %d failed\n", deletedCount, failedCount)
 
 			return nil
 		},
