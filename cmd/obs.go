@@ -17,6 +17,7 @@ func NewOBSCommand() *cobra.Command {
 	cmd.AddCommand(NewOBSListCommand())
 	cmd.AddCommand(NewOBSGetCommand())
 	cmd.AddCommand(NewOBSRemoveCommand())
+	cmd.AddCommand(NewOBSInitCommand())
 	return cmd
 }
 
@@ -31,9 +32,9 @@ func NewOBSAddCommand() *cobra.Command {
 			ak, _ := cmd.Flags().GetString("ak")
 			sk, _ := cmd.Flags().GetString("sk")
 
-			cfg, err := config.Load(getConfigPath())
+			cfg, err := config.LoadOrInit()
 			if err != nil {
-				cfg = config.NewConfig()
+				return fmt.Errorf("load config failed: %v", err)
 			}
 
 			cfg.AddOBS(name, endpoint, bucket, ak, sk)
@@ -66,7 +67,7 @@ func NewOBSListCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Load(getConfigPath())
 			if err != nil {
-				return fmt.Errorf("load config failed: %v", err)
+				return fmt.Errorf("load config failed: %v\nRun: obsput obs add --name prod --endpoint \"xxx\" --bucket \"xxx\" --ak \"xxx\" --sk \"xxx\"", err)
 			}
 
 			cmd.Println("NAME\tENDPOINT\tBUCKET\tSTATUS")
@@ -132,6 +133,27 @@ func NewOBSRemoveCommand() *cobra.Command {
 			}
 
 			cmd.Printf("Removed OBS config: %s\n", name)
+			return nil
+		},
+	}
+	return cmd
+}
+
+func NewOBSInitCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "init",
+		Short: "Initialize OBS configuration",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			path := getConfigPath()
+
+			cfg := config.NewConfig()
+			if err := cfg.Ensure(path); err != nil {
+				return fmt.Errorf("init config failed: %v", err)
+			}
+
+			cmd.Printf("Initialized config: %s\n", path)
+			cmd.Println("\nAdd OBS configuration:")
+			cmd.Println("  obsput obs add --name prod --endpoint \"obs.xxx.com\" --bucket \"bucket\" --ak \"xxx\" --sk \"xxx\"")
 			return nil
 		},
 	}
