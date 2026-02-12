@@ -104,6 +104,11 @@ func NewPutCommand() *cobra.Command {
 						speed := float64(result.Size) / elapsed.Seconds()
 						cmd.Printf("  Speed: %s/s\n", formatter.FormatSize(int64(speed)))
 					}
+					// Show download commands
+					cmd.Println()
+					cmd.Println("  Download:")
+					cmd.Printf("    wget %s -O <filename>\n", result.URL)
+					cmd.Printf("    curl -L %s -o <filename>\n", result.URL)
 					successCount++
 				} else {
 					cmd.Printf("  Failed: %s\n", result.Error)
