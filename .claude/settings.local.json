@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(go test:*)",
+      "Bash(go mod:*)",
+      "Bash(test:*)",
+      "Bash(chmod:*)",
+      "Bash(make:*)",
+      "Bash(go get:*)",
+      "Bash(go list:*)",
+      "Bash(/home/ubuntu/obsput/obsput --help)",
+      "Bash(/home/ubuntu/obsput/obsput upload:*)",
+      "Bash(/home/ubuntu/obsput/obsput list --help)",
+      "Bash(/home/ubuntu/obsput/obsput delete:*)",
+      "Bash(/home/ubuntu/obsput/obsput download:*)",
+      "Bash(/home/ubuntu/obsput/obsput obs --help)",
+      "Bash(go build:*)",
+      "Bash(git -C /home/ubuntu/obsput add pkg/progress/progress.go pkg/progress/progress_test.go)",
+      "Bash(git -C /home/ubuntu/obsput commit -m \"feat: add progress bar package\")",
+      "Bash(git -C /home/ubuntu/obsput status)"
+    ]
+  }
+}

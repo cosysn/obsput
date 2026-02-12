@@ -1,6 +1,7 @@
 package progress
 
 import (
+	"bytes"
 	"testing"
 )
 
@@ -28,5 +29,30 @@ func TestProgressBarFinish(t *testing.T) {
 
 	if !pb.IsFinished() {
 		t.Error("progress should be finished")
+	}
+}
+
+func TestProgressBarRender(t *testing.T) {
+	pb := New(100)
+	pb.SetTotal(100)
+	pb.Increment(50)
+
+	buf := bytes.NewBufferString("")
+	pb.SetWriter(buf)
+	pb.Render()
+
+	output := buf.String()
+	if output == "" {
+		t.Error("render should produce output")
+	}
+}
+
+func TestProgressBarWriter(t *testing.T) {
+	pb := New(100)
+	buf := bytes.NewBufferString("")
+	pb.SetWriter(buf)
+
+	if pb.writer != buf {
+		t.Error("writer should be set")
 	}
 }
