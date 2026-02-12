@@ -2,6 +2,7 @@ package output
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 
@@ -44,4 +45,17 @@ func (f *Formatter) PrintJSON(items []VersionItem) {
 	enc := json.NewEncoder(f.output)
 	enc.SetIndent("", "  ")
 	enc.Encode(items)
+}
+
+func (f *Formatter) FormatSize(bytes int64) string {
+	if bytes < 1024 {
+		return fmt.Sprintf("%d B", bytes)
+	}
+	if bytes < 1024*1024 {
+		return fmt.Sprintf("%.1f KB", float64(bytes)/1024)
+	}
+	if bytes < 1024*1024*1024 {
+		return fmt.Sprintf("%.1f MB", float64(bytes)/(1024*1024))
+	}
+	return fmt.Sprintf("%.2f GB", float64(bytes)/(1024*1024*1024))
 }

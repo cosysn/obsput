@@ -3,10 +3,13 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"obsput/pkg/config"
 	"obsput/pkg/obs"
+	"obsput/pkg/output"
 	versionpkg "obsput/pkg/version"
+	"obsput/pkg/progress"
 
 	"github.com/spf13/cobra"
 )
@@ -21,7 +24,8 @@ func NewUploadCommand() *cobra.Command {
 			prefix, _ := cmd.Flags().GetString("prefix")
 
 			// Check file exists
-			if _, err := os.Stat(filePath); os.IsNotExist(err) {
+			fileInfo, err := os.Stat(filePath)
+			if os.IsNotExist(err) {
 				return fmt.Errorf("file not found: %s", filePath)
 			}
 
@@ -38,23 +42,56 @@ func NewUploadCommand() *cobra.Command {
 			// Upload to all OBS configs
 			cmd.Println("Uploading:", filePath)
 			cmd.Println("Version:", ver)
+			cmd.Println()
+
+			// Create progress bar
+			pb := progress.New(fileInfo.Size())
+			formatter := output.NewFormatter()
+
+			// Upload to all OBS configs
+			successCount := 0
+			failCount := 0
 
 			for name, obsCfg := range cfg.Configs {
+				cmd.Printf("[%s]\n", name)
+
 				client := obs.NewClient(obsCfg.Endpoint, obsCfg.Bucket, obsCfg.AK, obsCfg.SK)
 
-				result, err := client.UploadFile(filePath, ver, prefix, nil)
+				startTime := time.Now()
+
+				result, err := client.UploadFile(filePath, ver, prefix, func(bytes int64) {
+					pb.SetTotal(fileInfo.Size())
+					pb.Increment(bytes - pb.Current())
+					pb.Render()
+				})
+
+				// Clear progress bar line
+				cmd.Println()
+
 				if err != nil {
-					cmd.Printf("[%s] Failed: %v\n", name, err)
+					cmd.Printf("  Failed: %v\n", err)
+					failCount++
 					continue
 				}
 
 				if result.Success {
-					cmd.Printf("[%s] Uploaded: %s\n", name, result.URL)
+					cmd.Printf("  Uploaded: %s\n", result.URL)
 					cmd.Printf("  MD5: %s\n", result.MD5)
+					cmd.Printf("  Size: %s\n", formatter.FormatSize(result.Size))
+					if result.Size > 0 {
+						elapsed := time.Since(startTime)
+						speed := float64(result.Size) / elapsed.Seconds()
+						cmd.Printf("  Speed: %s/s\n", formatter.FormatSize(int64(speed)))
+					}
+					successCount++
 				} else {
-					cmd.Printf("[%s] Failed: %s\n", name, result.Error)
+					cmd.Printf("  Failed: %s\n", result.Error)
+					failCount++
 				}
+				cmd.Println()
 			}
+
+			cmd.Printf("%d completed, %d failed\n", successCount, failCount)
 
 			return nil
 		},
