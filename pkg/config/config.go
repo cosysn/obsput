@@ -25,6 +25,23 @@ func NewConfig() *Config {
 	}
 }
 
+func GetConfigPath() (string, error) {
+	execPath, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+	dir := filepath.Dir(execPath)
+	return filepath.Join(dir, ".obsput", "obsput.yaml"), nil
+}
+
+func GetConfigDir() (string, error) {
+	execPath, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(filepath.Dir(execPath), ".obsput"), nil
+}
+
 func (c *Config) AddOBS(name, endpoint, bucket, ak, sk string) {
 	c.Configs[name] = &OBS{
 		Name:     name,
@@ -68,6 +85,13 @@ func (c *Config) Save(path string) error {
 	return os.WriteFile(path, data, 0644)
 }
 
+func (c *Config) Ensure(path string) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return c.Save(path)
+	}
+	return nil
+}
+
 func Load(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -81,4 +105,22 @@ func Load(path string) (*Config, error) {
 		cfg.Configs = make(map[string]*OBS)
 	}
 	return &cfg, nil
+}
+
+func LoadOrInit() (*Config, error) {
+	path, err := GetConfigPath()
+	if err != nil {
+		return nil, err
+	}
+
+	cfg, err := Load(path)
+	if err != nil {
+		// Config doesn't exist, create new one
+		cfg = NewConfig()
+		// Auto-generate template
+		if err := cfg.Ensure(path); err != nil {
+			return nil, err
+		}
+	}
+	return cfg, nil
 }
