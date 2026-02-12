@@ -53,12 +53,26 @@ func (c *Client) UploadFile(filePath, version, prefix string, progressCallback P
 		}, nil
 	}
 
+	// Get file size for progress reporting
+	fileInfo, err := os.Stat(filePath)
+	if err != nil {
+		return &UploadResult{
+			Success: false,
+			Error:   err.Error(),
+		}, nil
+	}
+
+	// Simulate progress callback for testing
+	if progressCallback != nil {
+		progressCallback(fileInfo.Size())
+	}
+
 	return &UploadResult{
 		Success:  true,
 		Version:  version,
 		URL:      c.GetDownloadURL(key),
 		MD5:      md5Hash,
-		Size:     0,
+		Size:     fileInfo.Size(),
 		OBSName:  c.Bucket,
 	}, nil
 }
