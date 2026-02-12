@@ -1,0 +1,14 @@
+# Binaries
+obsput
+*.exe
+
+# Dependencies
+vendor/
+
+# Build outputs
+bin/
+
+# IDE
+.idea/
+.vscode/
+*.swp
