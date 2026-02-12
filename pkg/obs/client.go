@@ -8,6 +8,7 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -73,6 +74,42 @@ func (c *Client) testTCPConnection() error {
 	return nil
 }
 
+// SetBucketAnonymousRead sets bucket policy to allow anonymous read access
+// This enables downloading objects without AK/SK credentials
+func (c *Client) SetBucketAnonymousRead() error {
+	// Build MinIO/S3 bucket policy for anonymous read
+	policy := map[string]interface{}{
+		"Version": "2012-10-17",
+		"Statement": []map[string]interface{}{
+			{
+				"Sid":       "AnonymousRead",
+				"Effect":    "Allow",
+				"Principal": map[string]string{"AWS": "*"},
+				"Action":    []string{"s3:GetObject"},
+				"Resource":  []string{fmt.Sprintf("arn:aws:s3:::%s/*", c.Bucket)},
+			},
+		},
+	}
+
+	policyJSON, err := json.Marshal(policy)
+	if err != nil {
+		return err
+	}
+
+	// Ensure connected
+	if err := c.ensureConnected(); err != nil {
+		return err
+	}
+
+	// Use SDK to set bucket policy
+	input := &huaweicloudsdkobs.SetBucketPolicyInput{
+		Bucket: c.Bucket,
+		Policy: string(policyJSON),
+	}
+	_, err = c.client.SetBucketPolicy(input)
+	return err
+}
+
 type progressListener struct {
 	callback func(transferred int64)
 	total    int64
@@ -134,7 +171,7 @@ func (c *Client) UploadFile(filePath, version, prefix string, progressCallback f
 	// Calculate MD5
 	md5Hash := c.CalculateMD5(content)
 
-	// Create put object input
+	// Create put object input with ACL
 	input := &huaweicloudsdkobs.PutObjectInput{
 		PutObjectBasicInput: huaweicloudsdkobs.PutObjectBasicInput{
 			ObjectOperationInput: huaweicloudsdkobs.ObjectOperationInput{
@@ -162,6 +199,12 @@ func (c *Client) UploadFile(filePath, version, prefix string, progressCallback f
 			Success: false,
 			Error:   fmt.Sprintf("upload failed with status: %d", output.StatusCode),
 		}, nil
+	}
+
+	// Set bucket policy for anonymous read access
+	if err := c.SetBucketAnonymousRead(); err != nil {
+		// Log the error but don't fail the upload
+		// The file is still uploaded successfully
 	}
 
 	return &UploadResult{
