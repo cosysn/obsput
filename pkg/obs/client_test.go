@@ -64,8 +64,14 @@ func TestMD5Calculation(t *testing.T) {
 	if md5 == "" {
 		t.Error("MD5 should not be empty")
 	}
-	if len(md5) != 32 {
-		t.Errorf("MD5 should be 32 chars, got %d", len(md5))
+	// MD5 is 16 bytes, base64 encoded is 24 characters
+	if len(md5) != 24 {
+		t.Errorf("MD5 should be 24 chars (base64), got %d", len(md5))
+	}
+	// Verify the expected base64 value for "test content"
+	expected := "lHP90NiApDwht3eNNIchVw=="
+	if md5 != expected {
+		t.Errorf("expected %s, got %s", expected, md5)
 	}
 }
 

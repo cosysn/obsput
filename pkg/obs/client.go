@@ -6,6 +6,7 @@ package obs
 import (
 	"bytes"
 	"crypto/md5"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -55,8 +56,9 @@ func (c *Client) ensureConnected() error {
 
 // testTCPConnection tests if we can establish a TCP connection to the endpoint
 func (c *Client) testTCPConnection() error {
-	// Extract hostname from endpoint (format: hostname:port or just hostname)
-	host := c.Endpoint
+	// Extract hostname from endpoint (remove http:// or https:// prefix)
+	host := strings.TrimPrefix(strings.TrimPrefix(c.Endpoint, "https://"), "http://")
+
 	// Add default port if not specified
 	if !strings.Contains(host, ":") {
 		host = host + ":443"
@@ -287,7 +289,8 @@ func (c *Client) GetUploadKey(prefix, version, filename string) string {
 
 func (c *Client) CalculateMD5(data []byte) string {
 	hash := md5.Sum(data)
-	return hex.EncodeToString(hash[:])
+	// Content-MD5 header requires base64 encoding
+	return base64.StdEncoding.EncodeToString(hash[:])
 }
 
 func (c *Client) CalculateMD5FromFile(path string) (string, error) {
@@ -305,7 +308,16 @@ func (c *Client) CalculateMD5FromFile(path string) (string, error) {
 }
 
 func (c *Client) GetDownloadURL(key string) string {
-	return fmt.Sprintf("https://%s.%s/%s", c.Bucket, c.Endpoint, key)
+	// Extract hostname without protocol
+	host := strings.TrimPrefix(strings.TrimPrefix(c.Endpoint, "https://"), "http://")
+
+	// Use virtual hosted style for standard OBS endpoints
+	// For MinIO or non-standard endpoints, use path style
+	if strings.Contains(host, "localhost") || strings.Contains(host, "127.0.0.1") {
+		// Path style for local/minio
+		return fmt.Sprintf("http://%s/%s/%s", host, c.Bucket, key)
+	}
+	return fmt.Sprintf("https://%s.%s/%s", c.Bucket, host, key)
 }
 
 func (c *Client) ParseVersionFromPath(path string) string {

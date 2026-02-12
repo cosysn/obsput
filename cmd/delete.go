@@ -16,7 +16,7 @@ func NewDeleteCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			version := args[0]
-			targetName, _ := cmd.Flags().GetString("name")
+			profile, _ := cmd.Flags().GetString("profile")
 
 			// Load config
 			cfg, err := config.LoadOrInit()
@@ -29,8 +29,8 @@ func NewDeleteCommand() *cobra.Command {
 			}
 
 			for name, obsCfg := range cfg.Configs {
-				// If name specified, only delete from that OBS
-				if targetName != "" && name != targetName {
+				// If profile specified, only delete from that OBS
+				if profile != "" && name != profile {
 					continue
 				}
 
@@ -49,7 +49,7 @@ func NewDeleteCommand() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().String("name", "", "OBS name to delete from")
+	cmd.Flags().StringP("profile", "p", "", "OBS profile name to use (default: all profiles)")
 	return cmd
 }
 

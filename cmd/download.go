@@ -17,6 +17,7 @@ func NewDownloadCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			version := args[0]
 			outputPath, _ := cmd.Flags().GetString("output")
+			profile, _ := cmd.Flags().GetString("profile")
 
 			// Load config
 			cfg, err := config.LoadOrInit()
@@ -28,7 +29,21 @@ func NewDownloadCommand() *cobra.Command {
 				return fmt.Errorf("No OBS configurations configured\n\nConfig file: %s\n\nAdd OBS:\n  obsput obs add --name prod --endpoint \"obs.xxx.com\" --bucket \"bucket\" --ak \"xxx\" --sk \"xxx\"", getConfigPath())
 			}
 
-			for name, obsCfg := range cfg.Configs {
+			// Determine which configs to use
+			var configsToUse map[string]*config.OBS
+			if profile != "" {
+				obsCfg := cfg.GetOBS(profile)
+				if obsCfg == nil {
+					return fmt.Errorf("profile '%s' not found in config\n\nRun: obsput obs list", profile)
+				}
+				configsToUse = map[string]*config.OBS{
+					profile: obsCfg,
+				}
+			} else {
+				configsToUse = cfg.Configs
+			}
+
+			for name, obsCfg := range configsToUse {
 				cmd.Printf("[%s]\n", name)
 
 				client := obsclient.NewClient(obsCfg.Endpoint, obsCfg.Bucket, obsCfg.AK, obsCfg.SK)
@@ -59,6 +74,7 @@ func NewDownloadCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().StringP("output", "o", "", "Output file path")
+	cmd.Flags().StringP("profile", "p", "", "OBS profile name to use (default: all profiles)")
 	return cmd
 }
 

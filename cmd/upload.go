@@ -22,6 +22,7 @@ func NewUploadCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			filePath := args[0]
 			prefix, _ := cmd.Flags().GetString("prefix")
+			profile, _ := cmd.Flags().GetString("profile")
 
 			// Check file exists
 			fileInfo, err := os.Stat(filePath)
@@ -43,7 +44,23 @@ func NewUploadCommand() *cobra.Command {
 				return fmt.Errorf("No OBS configurations configured\n\nConfig file: %s\n\nAdd OBS:\n  obsput obs add --name prod --endpoint \"obs.xxx.com\" --bucket \"bucket\" --ak \"xxx\" --sk \"xxx\"", getConfigPath())
 			}
 
-			// Upload to all OBS configs
+			// Determine which configs to upload to
+			var configsToUse map[string]*config.OBS
+			if profile != "" {
+				// Use specific profile
+				obsCfg := cfg.GetOBS(profile)
+				if obsCfg == nil {
+					return fmt.Errorf("profile '%s' not found in config\n\nRun: obsput obs list", profile)
+				}
+				configsToUse = map[string]*config.OBS{
+					profile: obsCfg,
+				}
+			} else {
+				// Upload to all configs
+				configsToUse = cfg.Configs
+			}
+
+			// Upload to selected configs
 			cmd.Println("Uploading:", filePath)
 			cmd.Println("Version:", ver)
 			cmd.Println()
@@ -52,11 +69,11 @@ func NewUploadCommand() *cobra.Command {
 			pb := progress.New(fileInfo.Size())
 			formatter := output.NewFormatter()
 
-			// Upload to all OBS configs
+			// Upload to selected OBS configs
 			successCount := 0
 			failCount := 0
 
-			for name, obsCfg := range cfg.Configs {
+			for name, obsCfg := range configsToUse {
 				cmd.Printf("[%s]\n", name)
 
 				client := obs.NewClient(obsCfg.Endpoint, obsCfg.Bucket, obsCfg.AK, obsCfg.SK)
@@ -101,6 +118,7 @@ func NewUploadCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().String("prefix", "", "Path prefix for upload")
+	cmd.Flags().StringP("profile", "p", "", "OBS profile name to use (default: all profiles)")
 	return cmd
 }
 
