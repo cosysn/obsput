@@ -20,7 +20,21 @@
       "Bash(go build:*)",
       "Bash(git -C /home/ubuntu/obsput add pkg/progress/progress.go pkg/progress/progress_test.go)",
       "Bash(git -C /home/ubuntu/obsput commit -m \"feat: add progress bar package\")",
-      "Bash(git -C /home/ubuntu/obsput status)"
+      "Bash(git -C /home/ubuntu/obsput status)",
+      "Bash(git -C /home/ubuntu/obsput commit -m \"feat: add progress bar rendering\")",
+      "Bash(git -C /home/ubuntu/obsput status --porcelain)",
+      "Bash(git -C /home/obsput log --oneline -3)",
+      "Bash(git -C /home/ubuntu/obsput show HEAD:pkg/progress/progress.go)",
+      "Bash(git -C /home/ubuntu/obsput log --oneline -5)",
+      "Bash(git -C /home/ubuntu/obsput diff pkg/progress/progress.go)",
+      "Bash(git -C /home/ubuntu/obsput log --oneline -6)",
+      "Bash(git -C /home/ubuntu/obsput show HEAD:pkg/progress/progress_test.go)",
+      "Bash(git -C /home/ubuntu/obsput commit -m \"feat: add progress callback integration\")",
+      "Bash(git -C /home/ubuntu/obsput commit -m \"feat: add progress speed display\")",
+      "Bash(docker:*)",
+      "Bash(grep:*)",
+      "Bash(go run:*)",
+      "Bash(./obsput:*)"
     ]
   }
 }

@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
+
 	"obsput/pkg/config"
 
 	"github.com/spf13/cobra"
@@ -29,8 +32,11 @@ func NewRootCommand() *cobra.Command {
 
 func Execute() {
 	cmd := NewRootCommand()
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
 	if err := cmd.Execute(); err != nil {
-		panic(err)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 }
 

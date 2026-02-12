@@ -65,7 +65,7 @@ func NewOBSListCommand() *cobra.Command {
 		Use:   "list",
 		Short: "List OBS configurations",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Load(getConfigPath())
+			cfg, err := config.LoadOrInit()
 			if err != nil {
 				return fmt.Errorf("load config failed: %v\nRun: obsput obs add --name prod --endpoint \"xxx\" --bucket \"xxx\" --ak \"xxx\" --sk \"xxx\"", err)
 			}
@@ -88,7 +88,7 @@ func NewOBSGetCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
 
-			cfg, err := config.Load(getConfigPath())
+			cfg, err := config.LoadOrInit()
 			if err != nil {
 				return fmt.Errorf("load config failed: %v", err)
 			}
@@ -117,7 +117,7 @@ func NewOBSRemoveCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := args[0]
 
-			cfg, err := config.Load(getConfigPath())
+			cfg, err := config.LoadOrInit()
 			if err != nil {
 				return fmt.Errorf("load config failed: %v", err)
 			}
