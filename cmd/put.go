@@ -14,10 +14,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewUploadCommand() *cobra.Command {
+func NewPutCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "upload <file>",
-		Short: "Upload binary to OBS",
+		Use:   "put <file>",
+		Short: "Put binary to OBS",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			filePath := args[0]
@@ -44,7 +44,7 @@ func NewUploadCommand() *cobra.Command {
 				return fmt.Errorf("No OBS configurations configured\n\nConfig file: %s\n\nAdd OBS:\n  obsput obs add --name prod --endpoint \"obs.xxx.com\" --bucket \"bucket\" --ak \"xxx\" --sk \"xxx\"", getConfigPath())
 			}
 
-			// Determine which configs to upload to
+			// Determine which configs to put to
 			var configsToUse map[string]*config.OBS
 			if profile != "" {
 				// Use specific profile
@@ -56,12 +56,12 @@ func NewUploadCommand() *cobra.Command {
 					profile: obsCfg,
 				}
 			} else {
-				// Upload to all configs
+				// Put to all configs
 				configsToUse = cfg.Configs
 			}
 
-			// Upload to selected configs
-			cmd.Println("Uploading:", filePath)
+			// Put to selected configs
+			cmd.Println("Putting:", filePath)
 			cmd.Println("Version:", ver)
 			cmd.Println()
 
@@ -69,7 +69,7 @@ func NewUploadCommand() *cobra.Command {
 			pb := progress.New(fileInfo.Size())
 			formatter := output.NewFormatter()
 
-			// Upload to selected OBS configs
+			// Put to selected OBS configs
 			successCount := 0
 			failCount := 0
 
@@ -96,7 +96,7 @@ func NewUploadCommand() *cobra.Command {
 				}
 
 				if result.Success {
-					cmd.Printf("  Uploaded: %s\n", result.URL)
+					cmd.Printf("  Put: %s\n", result.URL)
 					cmd.Printf("  MD5: %s\n", result.MD5)
 					cmd.Printf("  Size: %s\n", formatter.FormatSize(result.Size))
 					if result.Size > 0 {
@@ -117,7 +117,7 @@ func NewUploadCommand() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().String("prefix", "", "Path prefix for upload")
+	cmd.Flags().String("prefix", "", "Path prefix for put")
 	cmd.Flags().StringP("profile", "p", "", "OBS profile name to use (default: all profiles)")
 	return cmd
 }

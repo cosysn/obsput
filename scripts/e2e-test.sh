@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # E2E Test Script for obsput
-# Tests: upload → list → download → delete
+# Tests: put → list → download → delete
 
 echo "=== E2E Test Started ==="
 
@@ -165,7 +165,7 @@ fi
 # Verify bucket exists
 if ! "$MC" ls "myminio/$BUCKET_NAME" 2>/dev/null; then
     echo "Warning: Bucket $BUCKET_NAME not found, trying to create again..."
-    "$MC" mb "myminio/$BUCKET_NAME" || echo "Could not create bucket, will try upload anyway..."
+    "$MC" mb "myminio/$BUCKET_NAME" || echo "Could not create bucket, will try put anyway..."
 fi
 
 # ============================================
@@ -226,27 +226,27 @@ ORIGINAL_MD5=$(md5sum "$TEST_FILE" | awk '{print $1}')
 echo "Test file created: $TEST_FILE (MD5: $ORIGINAL_MD5)"
 
 # ----------------------------------------
-# Test 1: Upload
+# Test 1: Put
 # ----------------------------------------
 echo ""
-echo "--- Test 1: Upload ---"
-UPLOAD_OUTPUT=$("$OBSPUT" upload "$TEST_FILE" --profile prod 2>&1)
-echo "$UPLOAD_OUTPUT"
+echo "--- Test 1: Put ---"
+PUT_OUTPUT=$("$OBSPUT" put "$TEST_FILE" --profile prod 2>&1)
+echo "$PUT_OUTPUT"
 
-# Check if upload was successful
-if echo "$UPLOAD_OUTPUT" | grep -q "1 completed, 0 failed"; then
-    # Extract version ID from upload output
+# Check if put was successful
+if echo "$PUT_OUTPUT" | grep -q "1 completed, 0 failed"; then
+    # Extract version ID from put output
     # Format: "Version: v1.0.0-xxx-20260213-xxxx-x"
-    VERSION=$(echo "$UPLOAD_OUTPUT" | grep -oP 'Version:\s*\K[v0-9a-f\-]+' | head -1)
+    VERSION=$(echo "$PUT_OUTPUT" | grep -oP 'Version:\s*\K[v0-9a-f\-]+' | head -1)
 
     if [ -z "$VERSION" ]; then
-        echo "Error: Could not extract version ID from upload output"
+        echo "Error: Could not extract version ID from put output"
         exit 1
     fi
-    echo "Uploaded version: $VERSION"
-    echo "Upload: SUCCESS"
+    echo "Put version: $VERSION"
+    echo "Put: SUCCESS"
 else
-    echo "Upload failed!"
+    echo "Put failed!"
     exit 1
 fi
 
@@ -322,7 +322,7 @@ echo ""
 echo "=== All tests passed! ==="
 echo ""
 echo "Summary:"
-echo "  - Upload: SUCCESS"
+echo "  - Put: SUCCESS"
 echo "  - List: SUCCESS"
 echo "  - Download + MD5: SUCCESS"
 echo "  - Delete: SUCCESS"
