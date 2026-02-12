@@ -8,9 +8,10 @@ import (
 )
 
 type ProgressBar struct {
-	current int64
-	total   int64
-	writer  io.Writer
+	current  int64
+	total    int64
+	writer   io.Writer
+	callback func(transferred int64)
 }
 
 func New(total int64) *ProgressBar {
@@ -25,12 +26,19 @@ func (p *ProgressBar) SetWriter(w io.Writer) {
 	p.writer = w
 }
 
+func (p *ProgressBar) SetCallback(cb func(transferred int64)) {
+	p.callback = cb
+}
+
 func (p *ProgressBar) SetTotal(total int64) {
 	p.total = total
 }
 
 func (p *ProgressBar) Increment(n int64) {
 	p.current += n
+	if p.callback != nil {
+		p.callback(p.current)
+	}
 }
 
 func (p *ProgressBar) Current() int64 {

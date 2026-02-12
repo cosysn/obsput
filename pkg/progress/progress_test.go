@@ -56,3 +56,37 @@ func TestProgressBarWriter(t *testing.T) {
 		t.Error("writer should be set")
 	}
 }
+
+func TestProgressBarCallback(t *testing.T) {
+	var called bool
+	var received int64
+
+	pb := New(100)
+	pb.SetCallback(func(transferred int64) {
+		called = true
+		received = transferred
+	})
+
+	pb.Increment(50)
+
+	if !called {
+		t.Error("callback should have been called")
+	}
+	if received != 50 {
+		t.Errorf("expected 50, got %d", received)
+	}
+}
+
+func TestProgressBarWithBytes(t *testing.T) {
+	pb := New(1024 * 1024) // 1MB
+	pb.SetTotal(1024 * 1024)
+
+	// Simulate progress
+	for i := 0; i < 10; i++ {
+		pb.Increment(1024 * 100) // 100KB chunks
+	}
+
+	if pb.Current() != 1024*1000 {
+		t.Errorf("expected current to be 1MB, got %d", pb.Current())
+	}
+}
