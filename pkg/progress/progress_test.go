@@ -3,6 +3,7 @@ package progress
 import (
 	"bytes"
 	"testing"
+	"time"
 )
 
 func TestNewProgressBar(t *testing.T) {
@@ -88,5 +89,30 @@ func TestProgressBarWithBytes(t *testing.T) {
 
 	if pb.Current() != 1024*1000 {
 		t.Errorf("expected current to be 1MB, got %d", pb.Current())
+	}
+}
+
+func TestProgressBarSpeed(t *testing.T) {
+	pb := New(1000)
+	pb.SetTotal(1000)
+
+	// Simulate time passing
+	pb.SetStartTime(time.Now().Add(-time.Second))
+	pb.Increment(500)
+
+	speed := pb.GetSpeed()
+	if speed <= 0 {
+		t.Error("speed should be positive")
+	}
+}
+
+func TestProgressBarTimeRemaining(t *testing.T) {
+	pb := New(1000)
+	pb.SetTotal(1000)
+	pb.Increment(250)
+
+	remaining := pb.GetTimeRemaining()
+	if remaining < 0 {
+		t.Error("time remaining should be positive")
 	}
 }
