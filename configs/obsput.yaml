@@ -1,0 +1,12 @@
+# Example OBS configuration for obsput
+# Copy this file to ~/.obsput.yaml or specify with --config flag
+
+configs:
+  # Example OBS configuration
+  # Uncomment and modify as needed:
+  # prod:
+  #   name: prod
+  #   endpoint: obs.my-region.my-huaweicloud.com
+  #   bucket: my-bucket
+  #   ak: your-access-key
+  #   sk: your-secret-key
