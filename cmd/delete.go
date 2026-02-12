@@ -21,7 +21,11 @@ func NewDeleteCommand() *cobra.Command {
 			// Load config
 			cfg, err := config.Load(getConfigPath())
 			if err != nil {
-				return fmt.Errorf("load config failed: %v", err)
+				return fmt.Errorf("load config failed: %v\nRun: obsput obs add --name prod --endpoint \"xxx\" --bucket \"xxx\" --ak \"xxx\" --sk \"xxx\"", err)
+			}
+
+			if len(cfg.Configs) == 0 {
+				return fmt.Errorf("No OBS configurations configured\nRun: obsput obs add --name prod --endpoint \"obs.xxx.com\" --bucket \"bucket\" --ak \"xxx\" --sk \"xxx\"")
 			}
 
 			for name, obsCfg := range cfg.Configs {
