@@ -9,6 +9,9 @@ vendor/
 bin/
 build/
 
+# Config directory
+.obsput/
+
 # IDE
 .idea/
 .vscode/
