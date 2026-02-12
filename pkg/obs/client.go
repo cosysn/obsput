@@ -1,5 +1,8 @@
 package obs
 
+// Note: Huawei Cloud OBS SDK is compatible with S3-compatible services
+// including MinIO. Set the endpoint to your MinIO server URL.
+
 import (
 	"bytes"
 	"crypto/md5"
