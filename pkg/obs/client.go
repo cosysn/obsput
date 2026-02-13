@@ -382,6 +382,30 @@ func (c *Client) GetDownloadURL(key string) string {
 	return fmt.Sprintf("https://%s.%s/%s", c.Bucket, host, key)
 }
 
+// GetSignedDownloadURL generates a temporary download URL valid for specified duration
+// duration: time in hours (e.g., 24 for 1 day)
+func (c *Client) GetSignedDownloadURL(key string, durationHours int) (string, error) {
+	if err := c.ensureConnected(); err != nil {
+		return "", err
+	}
+
+	expires := durationHours * 3600 // convert hours to seconds
+
+	input := &huaweicloudsdkobs.CreateSignedUrlInput{
+		Bucket: c.Bucket,
+		Key:    key,
+		Method: huaweicloudsdkobs.HttpMethodGet,
+		Expires: expires,
+	}
+
+	output, err := c.client.CreateSignedUrl(input)
+	if err != nil {
+		return "", err
+	}
+
+	return output.SignedUrl, nil
+}
+
 func (c *Client) ParseVersionFromPath(path string) string {
 	path = strings.TrimSuffix(path, "/")
 	parts := strings.Split(path, "/")
