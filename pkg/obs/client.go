@@ -381,13 +381,18 @@ func (c *Client) GetDownloadURL(key string) string {
 	// Extract hostname without protocol
 	host := strings.TrimPrefix(strings.TrimPrefix(c.Endpoint, "https://"), "http://")
 
-	// Use virtual hosted style for standard OBS endpoints
-	// For MinIO or non-standard endpoints, use path style
-	if strings.Contains(host, "localhost") || strings.Contains(host, "127.0.0.1") {
-		// Path style for local/minio
+	// Use path style for IP addresses and localhost
+	// Virtual hosted style (bucket.host/key) doesn't work with IP addresses
+	if IsIPAddress(host) || strings.Contains(host, "localhost") {
 		return fmt.Sprintf("http://%s/%s/%s", host, c.Bucket, key)
 	}
 	return fmt.Sprintf("https://%s.%s/%s", c.Bucket, host, key)
+}
+
+// IsIPAddress checks if a string is an IP address
+func IsIPAddress(host string) bool {
+	ip := net.ParseIP(host)
+	return ip != nil
 }
 
 // GetSignedDownloadURL generates a temporary download URL valid for specified duration
