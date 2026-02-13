@@ -227,7 +227,11 @@ func (c *Client) UploadFile(filePath, version, prefix string, progressCallback f
 	}
 
 	// Generate signed URL valid for 1 day
-	signedURL, _ := c.GetSignedDownloadURL(key, 24)
+	signedURL, err := c.GetSignedDownloadURL(key, 24)
+	if err != nil {
+		// Signed URL generation failed, use public URL instead
+		signedURL = c.GetDownloadURL(key)
+	}
 
 	return &UploadResult{
 		Success:   true,
