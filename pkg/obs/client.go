@@ -110,8 +110,8 @@ func (c *Client) SetBucketAnonymousRead() error {
 	return err
 }
 
-// SetObjectACLPublicRead sets object ACL to allow anonymous read access
-func (c *Client) SetObjectACLPublicRead(key string) error {
+// SetObjectACLPublicReadWrite sets object ACL to allow anonymous read/write access
+func (c *Client) SetObjectACLPublicReadWrite(key string) error {
 	if err := c.ensureConnected(); err != nil {
 		return err
 	}
@@ -119,7 +119,7 @@ func (c *Client) SetObjectACLPublicRead(key string) error {
 	input := &huaweicloudsdkobs.SetObjectAclInput{
 		Bucket: c.Bucket,
 		Key:    key,
-		ACL:    "public-read",
+		ACL:    "public-read-write",
 	}
 	_, err := c.client.SetObjectAcl(input)
 	return err
@@ -221,8 +221,8 @@ func (c *Client) UploadFile(filePath, version, prefix string, progressCallback f
 		// Log the error but don't fail the upload
 	}
 
-	// Set object ACL for public read
-	if err := c.SetObjectACLPublicRead(key); err != nil {
+	// Set object ACL for public read/write
+	if err := c.SetObjectACLPublicReadWrite(key); err != nil {
 		// Log the error but don't fail the upload
 	}
 
