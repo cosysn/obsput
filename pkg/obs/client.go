@@ -391,6 +391,10 @@ func (c *Client) GetDownloadURL(key string) string {
 
 // IsIPAddress checks if a string is an IP address
 func IsIPAddress(host string) bool {
+	// Remove port if present
+	if idx := strings.LastIndex(host, ":"); idx != -1 {
+		host = host[:idx]
+	}
 	ip := net.ParseIP(host)
 	return ip != nil
 }
