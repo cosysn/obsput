@@ -226,13 +226,17 @@ func (c *Client) UploadFile(filePath, version, prefix string, progressCallback f
 		// Log the error but don't fail the upload
 	}
 
+	// Generate signed URL valid for 1 day
+	signedURL, _ := c.GetSignedDownloadURL(key, 24)
+
 	return &UploadResult{
-		Success:  true,
-		Version:  version,
-		URL:     c.GetDownloadURL(key),
-		MD5:     md5Hash,
-		Size:    fileInfo.Size(),
-		OBSName: c.Bucket,
+		Success:   true,
+		Version:   version,
+		URL:       c.GetDownloadURL(key),
+		SignedURL: signedURL,
+		MD5:       md5Hash,
+		Size:      fileInfo.Size(),
+		OBSName:   c.Bucket,
 	}, nil
 }
 
@@ -444,13 +448,14 @@ func formatSize(size int64) string {
 }
 
 type UploadResult struct {
-	Success  bool
-	Version  string
-	URL      string
-	MD5      string
-	Size     int64
-	Error    string
-	OBSName  string
+	Success    bool
+	Version    string
+	URL        string
+	SignedURL  string
+	MD5        string
+	Size       int64
+	Error      string
+	OBSName    string
 }
 
 type DeleteResult struct {

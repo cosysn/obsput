@@ -103,6 +103,7 @@ func NewPutCommand() *cobra.Command {
 					t.SetOutputMirror(cmd.OutOrStdout())
 					t.AppendHeader(table.Row{"Field", "Value"})
 					t.AppendRow(table.Row{"URL", result.URL})
+					t.AppendRow(table.Row{"Signed URL (24h)", result.SignedURL})
 					t.AppendRow(table.Row{"MD5", result.MD5})
 					t.AppendRow(table.Row{"Size", formatter.FormatSize(result.Size)})
 					if result.Size > 0 {
@@ -115,8 +116,8 @@ func NewPutCommand() *cobra.Command {
 					// Show download commands
 					cmd.Println()
 					cmd.Println("  Download:")
-					cmd.Printf("    wget %s -O <filename>\n", result.URL)
-					cmd.Printf("    curl -L %s -o <filename>\n", result.URL)
+					cmd.Printf("    wget %s -O <filename>\n", result.SignedURL)
+					cmd.Printf("    curl -L %s -o <filename>\n", result.SignedURL)
 					successCount++
 				} else {
 					cmd.Printf("    Failed: %s\n", result.Error)
