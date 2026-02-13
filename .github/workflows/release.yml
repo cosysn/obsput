@@ -1,0 +1,69 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Get version
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Build binaries
+        run: |
+          OS_ARCHES=("linux-amd64" "linux-arm64" "darwin-amd64" "darwin-arm64" "windows-amd64")
+          for os_arch in "${OS_ARCHES[@]}"; do
+            OS=$(echo $os_arch | cut -d'-' -f1)
+            ARCH=$(echo $os_arch | cut -d'-' -f2)
+            EXT=""
+            if [ "$OS" = "windows" ]; then
+              EXT=".exe"
+            fi
+            CGO_ENABLED=0 GOOS=$OS GOARCH=$ARCH go build -o "obsput-${OS}-${ARCH}${EXT}" .
+          done
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: obsput-*
+          name: Release ${{ steps.version.outputs.VERSION }}
+          body: |
+            ## Download
+
+            | Platform | Architecture | Download |
+            |----------|--------------|----------|
+            | Linux | amd64 | [obsput-linux-amd64](obsput-linux-amd64) |
+            | Linux | arm64 | [obsput-linux-arm64](obsput-linux-arm64) |
+            | macOS | amd64 | [obsput-darwin-amd64](obsput-darwin-amd64) |
+            | macOS | arm64 | [obsput-darwin-arm64](obsput-darwin-arm64) |
+            | Windows | amd64 | [obsput-windows-amd64.exe](obsput-windows-amd64.exe) |
+
+            ## Usage
+
+            ```bash
+            # Linux/macOS
+            chmod +x obsput-linux-amd64
+            ./obsput-linux-amd64 version
+
+            # Windows
+            obsput-windows-amd64.exe version
+            ```
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
