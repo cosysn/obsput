@@ -117,8 +117,9 @@ func NewPutCommand() *cobra.Command {
 					out.PrintBox("Upload Result", content)
 
 					out.Println(styled.Header, "Download Commands:")
-					out.Printf(styled.Muted, "  curl -L %s -o <output>\n", result.SignedURL)
-					out.Printf(styled.Muted, "  wget %s -O <output>\n", result.SignedURL)
+					cleanURL := obs.CleanURL(result.SignedURL)
+					out.Printf(styled.Muted, "  curl -L %s -o <output>\n", cleanURL)
+					out.Printf(styled.Muted, "  wget %s -O <output>\n", cleanURL)
 					out.Spacer()
 					out.SuccessMsg(fmt.Sprintf("Uploaded to %s", obsCfg.Bucket))
 					successCount++
