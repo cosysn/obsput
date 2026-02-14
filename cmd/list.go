@@ -8,7 +8,6 @@ import (
 	"obsput/pkg/output"
 	"obsput/pkg/styled"
 
-	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 )
 
@@ -86,15 +85,18 @@ func NewListCommand() *cobra.Command {
 				if outputFormat == "json" {
 					formatter.PrintJSON(items)
 				} else {
-					// Print table with styled output
-					t := table.NewWriter()
-					t.SetOutputMirror(cmd.OutOrStdout())
-					t.SetStyle(table.StyleRounded)
-					t.AppendHeader(table.Row{"Version", "Size", "Date", "Commit"})
+					// Print versions as cards
 					for _, item := range items {
-						t.AppendRow(table.Row{item.Version, item.Size, item.Date, item.Commit})
+						out.Spacer()
+						content := map[string]string{
+							"Version": item.Version,
+							"Size":    item.Size,
+							"Date":    item.Date,
+							"Commit":  item.Commit,
+						}
+						out.PrintBox("Version Info", content)
 					}
-					t.Render()
+					out.Spacer()
 				}
 				cmd.Println()
 			}
