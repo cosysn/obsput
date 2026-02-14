@@ -266,6 +266,7 @@ func (c *Client) UploadFile(filePath, version, prefix string, progressCallback f
 	return &UploadResult{
 		Success:   true,
 		Version:   version,
+		Key:       key,
 		URL:       c.GetDownloadURL(key),
 		SignedURL: signedURL,
 		MD5:       md5Hash,
@@ -485,6 +486,20 @@ func extractFilename(path string) string {
 	return filepath.Base(path)
 }
 
+// ExtractFilenameFromKey extracts the original filename from an object key
+// Key format: prefix/version/filename or version/filename
+func (c *Client) ExtractFilenameFromKey(key string) string {
+	// Remove trailing slash
+	key = strings.TrimSuffix(key, "/")
+
+	// Split by "/" and take the last part
+	parts := strings.Split(key, "/")
+	if len(parts) > 0 {
+		return parts[len(parts)-1]
+	}
+	return ""
+}
+
 func formatSize(size int64) string {
 	if size < 1024 {
 		return fmt.Sprintf("%d B", size)
@@ -501,6 +516,7 @@ func formatSize(size int64) string {
 type UploadResult struct {
 	Success    bool
 	Version    string
+	Key        string
 	URL        string
 	SignedURL  string
 	MD5        string

@@ -102,6 +102,8 @@ func NewPutCommand() *cobra.Command {
 				}
 
 				if result.Success {
+					// Extract filename from key
+					filename := client.ExtractFilenameFromKey(result.Key)
 					// Print result in a styled box
 					content := map[string]string{
 						"URL":        result.URL,
@@ -118,8 +120,8 @@ func NewPutCommand() *cobra.Command {
 
 					out.Println(styled.Header, "Download Commands:")
 					cleanURL := obs.CleanURL(result.SignedURL)
-					out.Printf(styled.Muted, "  curl -k -o <filename> %s\n", cleanURL)
-					out.Printf(styled.Muted, "  wget --no-check-certificate %s\n", cleanURL)
+					out.Printf(styled.Muted, "  curl -k -o %s %s\n", filename, cleanURL)
+					out.Printf(styled.Muted, "  wget --no-check-certificate -O %s %s\n", filename, cleanURL)
 					out.Spacer()
 					out.SuccessMsg(fmt.Sprintf("Uploaded to %s", obsCfg.Bucket))
 					successCount++

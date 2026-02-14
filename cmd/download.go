@@ -68,13 +68,15 @@ func NewDownloadCommand() *cobra.Command {
 					if v.Version == version {
 						found = true
 						cleanURL := obsclient.CleanURL(v.URL)
+						client := obsclient.NewClient(obsCfg.Endpoint, obsCfg.Bucket, obsCfg.AK, obsCfg.SK)
+						filename := client.ExtractFilenameFromKey(v.Key)
 						out.KeyValue("Version", v.Version)
 						out.KeyValue("URL", cleanURL)
 						out.KeyValue("Size", v.Size)
 						out.Divider()
 						out.Println(styled.Header, "Download Commands:")
-						out.Printf(styled.Muted, "  curl -k -o <filename> %s\n", cleanURL)
-						out.Printf(styled.Muted, "  wget --no-check-certificate %s\n", cleanURL)
+						out.Printf(styled.Muted, "  curl -k -o %s %s\n", filename, cleanURL)
+						out.Printf(styled.Muted, "  wget --no-check-certificate -O %s %s\n", filename, cleanURL)
 					}
 				}
 			}
