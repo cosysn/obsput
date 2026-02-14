@@ -91,35 +91,52 @@ func (o *Output) Println(style Style, args ...interface{}) {
 	o.w.Write([]byte("\n"))
 }
 
-// PrintBox prints text in a box
-func (o *Output) PrintBox(style Style, title string, content string) {
+// PrintBox prints text in a styled box
+func (o *Output) PrintBox(title string, content map[string]string) {
 	o.w.Write([]byte("\n"))
-	o.w.Write([]byte(o.styleText(style, "┌"+"─"+strings.Repeat("─", len(title)+2)+"┐")))
+
+	// Calculate width
+	maxWidth := len(title) + 4
+	for k, v := range content {
+		if len(k)+len(v)+4 > maxWidth {
+			maxWidth = len(k) + len(v) + 4
+		}
+	}
+
+	// Top border
+	o.w.Write([]byte(o.styleText(Header, "┌"+strings.Repeat("─", maxWidth)+"┐")))
 	o.w.Write([]byte("\n"))
-	o.w.Write([]byte(o.styleText(style, fmt.Sprintf("│ %s │", title))))
+
+	// Title
+	o.w.Write([]byte(o.styleText(Header, fmt.Sprintf("│ %-*s │", maxWidth, title))))
 	o.w.Write([]byte("\n"))
-	o.w.Write([]byte(o.styleText(style, "├"+"─"+strings.Repeat("─", len(title)+2)+"┤")))
+
+	// Title separator
+	o.w.Write([]byte(o.styleText(Header, "├"+strings.Repeat("─", maxWidth)+"┤")))
 	o.w.Write([]byte("\n"))
-	lines := strings.Split(content, "\n")
-	for _, line := range lines {
-		o.w.Write([]byte(o.styleText(style, fmt.Sprintf("│ %-*s │", len(title)+2, line))))
+
+	// Content
+	for k, v := range content {
+		o.w.Write([]byte(o.styleText(Muted, fmt.Sprintf("│ %-*s │", maxWidth, k+" : "+v))))
 		o.w.Write([]byte("\n"))
 	}
-	o.w.Write([]byte(o.styleText(style, "└"+"─"+strings.Repeat("─", len(title)+2)+"┘")))
+
+	// Bottom border
+	o.w.Write([]byte(o.styleText(Header, "└"+strings.Repeat("─", maxWidth)+"┘")))
 	o.w.Write([]byte("\n"))
 }
 
-// Section prints a section header
+// Section prints a section header with decorations
 func (o *Output) Section(title string) {
 	o.w.Write([]byte("\n"))
-	o.w.Write([]byte(o.styleText(Header, fmt.Sprintf("━━ %s ━━", strings.ToUpper(title)))))
+	o.w.Write([]byte(o.styleText(Header, "  ━━━ "+strings.ToUpper(title)+" ━━━")))
 	o.w.Write([]byte("\n"))
 }
 
 // Subsection prints a subsection header
 func (o *Output) Subsection(title string) {
 	o.w.Write([]byte("\n"))
-	o.w.Write([]byte(o.styleText(Info, fmt.Sprintf("▶ %s", title))))
+	o.w.Write([]byte(o.styleText(Info, "  ▶ "+title)))
 	o.w.Write([]byte("\n"))
 }
 
@@ -130,26 +147,23 @@ func (o *Output) KeyValue(key string, value interface{}) {
 	o.w.Write([]byte(fmt.Sprintf("%v\n", value)))
 }
 
-// SuccessMsg prints a success message
+// SuccessMsg prints a success message with icon
 func (o *Output) SuccessMsg(msg string) {
-	o.w.Write([]byte(o.styleText(Success, "✓")))
-	o.w.Write([]byte(" "))
+	o.w.Write([]byte(o.styleText(Success, "  ✓ ")))
 	o.w.Write([]byte(msg))
 	o.w.Write([]byte("\n"))
 }
 
-// ErrorMsg prints an error message
+// ErrorMsg prints an error message with icon
 func (o *Output) ErrorMsg(msg string) {
-	o.w.Write([]byte(o.styleText(Error, "✗")))
-	o.w.Write([]byte(" "))
+	o.w.Write([]byte(o.styleText(Error, "  ✗ ")))
 	o.w.Write([]byte(msg))
 	o.w.Write([]byte("\n"))
 }
 
-// WarningMsg prints a warning message
+// WarningMsg prints a warning message with icon
 func (o *Output) WarningMsg(msg string) {
-	o.w.Write([]byte(o.styleText(Warning, "⚠")))
-	o.w.Write([]byte(" "))
+	o.w.Write([]byte(o.styleText(Warning, "  ⚠ ")))
 	o.w.Write([]byte(msg))
 	o.w.Write([]byte("\n"))
 }
@@ -177,15 +191,15 @@ func (o *Output) ResultTable(results map[string]string) {
 	t.Render()
 }
 
-// Summary prints a summary line
+// Summary prints a summary line with colored status
 func (o *Output) Summary(success, failed int) {
 	o.w.Write([]byte("\n"))
 	if failed == 0 {
-		o.w.Write([]byte(o.styleText(Success, fmt.Sprintf("✓ %d uploaded successfully", success))))
+		o.w.Write([]byte(o.styleText(Success, fmt.Sprintf("  ✓ %d uploaded successfully", success))))
 	} else if success == 0 {
-		o.w.Write([]byte(o.styleText(Error, fmt.Sprintf("✗ %d failed, %d successful", failed, success))))
+		o.w.Write([]byte(o.styleText(Error, fmt.Sprintf("  ✗ %d failed, %d successful", failed, success))))
 	} else {
-		o.w.Write([]byte(o.styleText(Warning, fmt.Sprintf("⚠ %d successful, %d failed", success, failed))))
+		o.w.Write([]byte(o.styleText(Warning, fmt.Sprintf("  ⚠ %d successful, %d failed", success, failed))))
 	}
 	o.w.Write([]byte("\n"))
 }
@@ -198,6 +212,11 @@ func (o *Output) Separator() {
 
 // Divider prints a divider
 func (o *Output) Divider() {
+	o.w.Write([]byte("\n"))
+}
+
+// Spacer prints a blank line
+func (o *Output) Spacer() {
 	o.w.Write([]byte("\n"))
 }
 

@@ -8,6 +8,7 @@ import (
 	"obsput/pkg/output"
 	"obsput/pkg/styled"
 
+	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 )
 
@@ -47,23 +48,26 @@ func NewListCommand() *cobra.Command {
 			out := styled.NewOutput()
 			formatter := output.NewFormatter()
 
-			out.Divider()
 			out.Section("Versions")
 			out.Divider()
 
 			totalVersions := 0
 			for name, obsCfg := range configsToUse {
-				out.Subsection("[" + name + "]")
+				// Print profile header
+				out.Println(styled.Info, " "+name)
+				cmd.Println()
 
 				client := obsclient.NewClient(obsCfg.Endpoint, obsCfg.Bucket, obsCfg.AK, obsCfg.SK)
 				versions, err := client.ListVersions("")
 				if err != nil {
 					out.ErrorMsg(fmt.Sprintf("Failed to list versions: %v", err))
+					cmd.Println()
 					continue
 				}
 
 				if len(versions) == 0 {
-					out.Println(styled.Muted, "No versions found")
+					out.Println(styled.Muted, "   No versions found")
+					cmd.Println()
 					continue
 				}
 
@@ -82,12 +86,21 @@ func NewListCommand() *cobra.Command {
 				if outputFormat == "json" {
 					formatter.PrintJSON(items)
 				} else {
-					formatter.PrintVersionTable(items)
+					// Print table with styled output
+					t := table.NewWriter()
+					t.SetOutputMirror(cmd.OutOrStdout())
+					t.SetStyle(table.StyleRounded)
+					t.AppendHeader(table.Row{"Version", "Size", "Date", "Commit"})
+					for _, item := range items {
+						t.AppendRow(table.Row{item.Version, item.Size, item.Date, item.Commit})
+					}
+					t.Render()
 				}
+				cmd.Println()
 			}
 
 			if totalVersions > 0 {
-				out.KeyValue("Total versions", totalVersions)
+				out.Section(fmt.Sprintf("Total: %d versions", totalVersions))
 			}
 
 			return nil

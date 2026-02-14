@@ -12,7 +12,6 @@ import (
 	versionpkg "obsput/pkg/version"
 	"obsput/pkg/progress"
 
-	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/spf13/cobra"
 )
 
@@ -103,28 +102,24 @@ func NewPutCommand() *cobra.Command {
 				}
 
 				if result.Success {
-					// Print result in a styled table
-					t := table.NewWriter()
-					t.SetOutputMirror(cmd.OutOrStdout())
-					t.AppendHeader(table.Row{"Field", "Value"})
-					t.AppendRow(table.Row{"URL", result.URL})
-					t.AppendRow(table.Row{"Signed URL", styled.CleanText(result.SignedURL)})
-					t.AppendRow(table.Row{"MD5", result.MD5})
-					t.AppendRow(table.Row{"Size", formatter.FormatSize(result.Size)})
+					// Print result in a styled box
+					content := map[string]string{
+						"URL":        result.URL,
+						"Size":       formatter.FormatSize(result.Size),
+						"MD5":        result.MD5,
+						"Clean URL":  styled.CleanText(result.SignedURL),
+					}
 					if result.Size > 0 {
 						elapsed := time.Since(startTime)
 						speed := float64(result.Size) / elapsed.Seconds()
-						t.AppendRow(table.Row{"Speed", formatter.FormatSize(int64(speed)) + "/s"})
+						content["Speed"] = formatter.FormatSize(int64(speed)) + "/s"
 					}
-					t.Render()
+					out.PrintBox("Upload Result", content)
 
-					// Show download commands
-					out.KeyValue("Clean URL", styled.CleanText(result.SignedURL))
-					out.Divider()
-					out.Println(styled.Style{Fg: styled.ColorCyan}, "Download Commands:")
+					out.Println(styled.Header, "Download Commands:")
 					out.Printf(styled.Muted, "  curl -L %s -o <output>\n", result.SignedURL)
 					out.Printf(styled.Muted, "  wget %s -O <output>\n", result.SignedURL)
-					out.Divider()
+					out.Spacer()
 					out.SuccessMsg(fmt.Sprintf("Uploaded to %s", obsCfg.Bucket))
 					successCount++
 				} else {
