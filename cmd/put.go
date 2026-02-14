@@ -107,7 +107,7 @@ func NewPutCommand() *cobra.Command {
 						"URL":        result.URL,
 						"Size":       formatter.FormatSize(result.Size),
 						"MD5":        result.MD5,
-						"Clean URL":  styled.CleanText(result.SignedURL),
+						"Clean URL":  obs.CleanURL(result.SignedURL),
 					}
 					if result.Size > 0 {
 						elapsed := time.Since(startTime)
