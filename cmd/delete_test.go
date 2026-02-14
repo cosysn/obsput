@@ -7,8 +7,8 @@ import (
 
 func TestDeleteCommand(t *testing.T) {
 	cmd := NewDeleteCommand()
-	if cmd.Use != "delete <version>" {
-		t.Errorf("expected use 'delete <version>', got '%s'", cmd.Use)
+	if cmd.Use != "delete <version|--before>" {
+		t.Errorf("expected use 'delete <version|--before>', got '%s'", cmd.Use)
 	}
 }
 
