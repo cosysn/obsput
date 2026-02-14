@@ -16,7 +16,7 @@ func TestIntegration_UploadListDelete(t *testing.T) {
 	}
 
 	// Test upload command structure
-	uploadCmd := NewUploadCommand()
+	uploadCmd := NewPutCommand()
 	uploadBuf := bytes.NewBufferString("")
 	uploadCmd.SetOut(uploadBuf)
 	uploadCmd.SetArgs([]string{testFile})
@@ -84,6 +84,7 @@ func TestIntegration_OBSCommandStructure(t *testing.T) {
 		"list":   true,
 		"get":    true,
 		"remove": true,
+		"mb":     true,
 	}
 
 	for _, c := range subCmds {

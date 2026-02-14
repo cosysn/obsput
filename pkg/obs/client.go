@@ -125,6 +125,36 @@ func (c *Client) SetObjectACLPublicReadWrite(key string) error {
 	return err
 }
 
+// BucketExists checks if the bucket exists
+func (c *Client) BucketExists() error {
+	if err := c.ensureConnected(); err != nil {
+		return err
+	}
+
+	_, err := c.client.HeadBucket(c.Bucket)
+	return err
+}
+
+// CreateBucket creates a bucket if it doesn't exist
+// Returns error if bucket already exists
+func (c *Client) CreateBucket() error {
+	// First check if bucket exists
+	if err := c.BucketExists(); err == nil {
+		return fmt.Errorf("bucket %s already exists", c.Bucket)
+	}
+
+	// Ensure connected
+	if err := c.ensureConnected(); err != nil {
+		return err
+	}
+
+	input := &huaweicloudsdkobs.CreateBucketInput{
+		Bucket: c.Bucket,
+	}
+	_, err := c.client.CreateBucket(input)
+	return err
+}
+
 type progressListener struct {
 	callback func(transferred int64)
 	total    int64
@@ -484,4 +514,11 @@ type VersionInfo struct {
 	Commit  string
 	Version string
 	URL     string
+}
+
+type BucketResult struct {
+	OBSName string
+	Bucket  string
+	Success bool
+	Error   string
 }

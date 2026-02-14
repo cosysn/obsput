@@ -97,6 +97,12 @@ The configuration file is automatically created in the same directory as the bin
 
 # Initialize config (if not exists)
 ./obsput obs init
+
+# Create bucket for specific OBS
+./obsput obs mb prod
+
+# Create bucket for all OBS (concurrent)
+./obsput obs mb
 ```
 
 ## Usage
@@ -105,13 +111,13 @@ The configuration file is automatically created in the same directory as the bin
 
 ```bash
 # Simple upload
-./obsput upload ./bin/myapp
+./obsput put ./bin/myapp
 
 # Upload with prefix
-./obsput upload ./bin/myapp --prefix releases
+./obsput put ./bin/myapp --prefix releases
 
 # Upload with specific OBS
-./obsput upload ./bin/myapp --name prod
+./obsput put ./bin/myapp --name prod
 ```
 
 Output:
@@ -229,7 +235,7 @@ jobs:
       - name: Upload to OBS
         run: |
           cd build/v*/linux/amd64
-          ./obsput upload obsput --prefix releases
+          ./obsput put obsput --prefix releases
         env:
           OBS_ENDPOINT: ${{ secrets.OBS_ENDPOINT }}
           OBS_BUCKET: ${{ secrets.OBS_BUCKET }}
@@ -256,7 +262,7 @@ deploy:
   stage: deploy
   script:
     - cd build/v*/linux/amd64
-    - ./obsput upload obsput --prefix releases
+    - ./obsput put obsput --prefix releases
   environment:
     name: production
 ```
@@ -311,11 +317,11 @@ make all
 obsput/
 ├── cmd/                    # CLI commands
 │   ├── root.go            # Root command
-│   ├── upload.go          # Upload command
+│   ├── put.go             # Upload command
 │   ├── list.go            # List command
 │   ├── delete.go          # Delete command
 │   ├── download.go        # Download command
-│   └── obs.go             # Config management
+│   └── obs.go             # Config management (add/list/get/remove/mb/init)
 ├── pkg/                    # Packages
 │   ├── config/            # Configuration
 │   ├── obs/               # OBS client
