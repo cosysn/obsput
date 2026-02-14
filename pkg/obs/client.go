@@ -453,6 +453,14 @@ func (c *Client) GetSignedDownloadURL(key string, durationHours int) (string, er
 	return output.SignedUrl, nil
 }
 
+// CleanURL removes query parameters from a URL
+func CleanURL(url string) string {
+	if idx := strings.Index(url, "?"); idx != -1 {
+		return url[:idx]
+	}
+	return url
+}
+
 func (c *Client) ParseVersionFromPath(path string) string {
 	path = strings.TrimSuffix(path, "/")
 	parts := strings.Split(path, "/")

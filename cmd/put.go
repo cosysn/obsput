@@ -113,11 +113,13 @@ func NewPutCommand() *cobra.Command {
 					}
 					t.Render()
 
-					// Show download commands
+					// Show download commands (use clean URL for display)
+					cleanURL := obs.CleanURL(result.SignedURL)
 					cmd.Println()
 					cmd.Println("  Download:")
 					cmd.Printf("    wget %s -O <filename>\n", result.SignedURL)
 					cmd.Printf("    curl -L %s -o <filename>\n", result.SignedURL)
+					cmd.Printf("  Clean URL:\n    %s\n", cleanURL)
 					successCount++
 				} else {
 					cmd.Printf("    Failed: %s\n", result.Error)
