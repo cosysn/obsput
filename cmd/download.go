@@ -17,7 +17,6 @@ func NewDownloadCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			version := args[0]
-			outputPath, _ := cmd.Flags().GetString("output")
 			profile, _ := cmd.Flags().GetString("profile")
 
 			// Load config
@@ -27,7 +26,7 @@ func NewDownloadCommand() *cobra.Command {
 			}
 
 			if len(cfg.Configs) == 0 {
-				return fmt.Errorf("No OBS configurations configured\n\nConfig file: %s\n\nAdd OBS:\n  obsput obs add --name prod --endpoint \"obs.xxx.com\" --bucket \"bucket\" --ak \"xxx\" --sk \"xxx\"", getConfigPath())
+				return fmt.Errorf("no OBS configurations configured.\n\nRun: obsput obs add --name prod --endpoint \"obs.xxx.com\" --bucket \"bucket\" --ak \"xxx\" --sk \"xxx\"")
 			}
 
 			// Determine which configs to use
@@ -35,7 +34,7 @@ func NewDownloadCommand() *cobra.Command {
 			if profile != "" {
 				obsCfg := cfg.GetOBS(profile)
 				if obsCfg == nil {
-					return fmt.Errorf("profile '%s' not found in config\n\nRun: obsput obs list", profile)
+					return fmt.Errorf("profile '%s' not found in config.\n\nRun: obsput obs list", profile)
 				}
 				configsToUse = map[string]*config.OBS{
 					profile: obsCfg,
@@ -68,16 +67,14 @@ func NewDownloadCommand() *cobra.Command {
 				for _, v := range versions {
 					if v.Version == version {
 						found = true
+						cleanURL := obsclient.CleanURL(v.URL)
 						out.KeyValue("Version", v.Version)
-						out.KeyValue("URL", v.URL)
+						out.KeyValue("URL", cleanURL)
 						out.KeyValue("Size", v.Size)
 						out.Divider()
 						out.Println(styled.Header, "Download Commands:")
-						out.Printf(styled.Muted, "  curl -L %s -o <output>\n", v.URL)
-						out.Printf(styled.Muted, "  wget %s -O <output>\n", v.URL)
-						if outputPath != "" {
-							out.Printf(styled.Muted, "  curl -o %s %s\n", outputPath, v.URL)
-						}
+						out.Printf(styled.Muted, "  curl -L %s -o <filename>\n", v.URL)
+						out.Printf(styled.Muted, "  wget %s -O <filename>\n", v.URL)
 					}
 				}
 			}
@@ -89,7 +86,6 @@ func NewDownloadCommand() *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().StringP("output", "o", "", "Output file path")
 	cmd.Flags().StringP("profile", "p", "", "OBS profile name to use (default: all profiles)")
 	return cmd
 }
