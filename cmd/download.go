@@ -5,6 +5,7 @@ import (
 
 	"obsput/pkg/config"
 	obsclient "obsput/pkg/obs"
+	"obsput/pkg/styled"
 
 	"github.com/spf13/cobra"
 )
@@ -43,31 +44,46 @@ func NewDownloadCommand() *cobra.Command {
 				configsToUse = cfg.Configs
 			}
 
+			// Create styled output
+			out := styled.NewOutput()
+
+			out.Divider()
+			out.Section("Download")
+			out.KeyValue("Version", version)
+			out.Divider()
+
+			found := false
 			for name, obsCfg := range configsToUse {
-				cmd.Printf("[%s]\n", name)
+				out.Subsection("[" + name + "]")
 
 				client := obsclient.NewClient(obsCfg.Endpoint, obsCfg.Bucket, obsCfg.AK, obsCfg.SK)
 
 				// Find the version
 				versions, err := client.ListVersions("")
 				if err != nil {
-					cmd.Printf("Error: %v\n", err)
+					out.ErrorMsg(fmt.Sprintf("Failed to list versions: %v", err))
 					continue
 				}
 
 				for _, v := range versions {
 					if v.Version == version {
-						cmd.Printf("Version: %s\n", v.Version)
-						cmd.Printf("URL: %s\n", v.URL)
-						cmd.Println()
-						cmd.Println("Commands:")
-						cmd.Printf("  curl -O %s\n", v.URL)
-						cmd.Printf("  wget %s\n", v.URL)
+						found = true
+						out.KeyValue("Version", v.Version)
+						out.KeyValue("URL", v.URL)
+						out.KeyValue("Size", v.Size)
+						out.Divider()
+						out.Println(styled.Header, "Download Commands:")
+						out.Printf(styled.Muted, "  curl -L %s -o <output>\n", v.URL)
+						out.Printf(styled.Muted, "  wget %s -O <output>\n", v.URL)
 						if outputPath != "" {
-							cmd.Printf("  curl -o %s %s\n", outputPath, v.URL)
+							out.Printf(styled.Muted, "  curl -o %s %s\n", outputPath, v.URL)
 						}
 					}
 				}
+			}
+
+			if !found {
+				out.WarningMsg(fmt.Sprintf("Version %s not found", version))
 			}
 
 			return nil

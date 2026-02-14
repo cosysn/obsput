@@ -6,6 +6,7 @@ import (
 
 	"obsput/pkg/config"
 	"obsput/pkg/output"
+	"obsput/pkg/styled"
 
 	"github.com/spf13/cobra"
 )
@@ -42,17 +43,27 @@ func NewListCommand() *cobra.Command {
 				configsToUse = cfg.Configs
 			}
 
+			// Create styled output
+			out := styled.NewOutput()
 			formatter := output.NewFormatter()
 
+			out.Divider()
+			out.Section("Versions")
+			out.Divider()
+
+			totalVersions := 0
 			for name, obsCfg := range configsToUse {
-				cmd.Println()
-				cmd.Printf("  [%s]\n", name)
-				cmd.Println()
+				out.Subsection("[" + name + "]")
 
 				client := obsclient.NewClient(obsCfg.Endpoint, obsCfg.Bucket, obsCfg.AK, obsCfg.SK)
 				versions, err := client.ListVersions("")
 				if err != nil {
-					cmd.Printf("  Error: %v\n", err)
+					out.ErrorMsg(fmt.Sprintf("Failed to list versions: %v", err))
+					continue
+				}
+
+				if len(versions) == 0 {
+					out.Println(styled.Muted, "No versions found")
 					continue
 				}
 
@@ -65,6 +76,7 @@ func NewListCommand() *cobra.Command {
 						Commit:  v.Commit,
 						URL:     v.URL,
 					})
+					totalVersions++
 				}
 
 				if outputFormat == "json" {
@@ -72,6 +84,10 @@ func NewListCommand() *cobra.Command {
 				} else {
 					formatter.PrintVersionTable(items)
 				}
+			}
+
+			if totalVersions > 0 {
+				out.KeyValue("Total versions", totalVersions)
 			}
 
 			return nil

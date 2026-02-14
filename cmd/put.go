@@ -8,6 +8,7 @@ import (
 	"obsput/pkg/config"
 	"obsput/pkg/obs"
 	"obsput/pkg/output"
+	"obsput/pkg/styled"
 	versionpkg "obsput/pkg/version"
 	"obsput/pkg/progress"
 
@@ -61,22 +62,26 @@ func NewPutCommand() *cobra.Command {
 				configsToUse = cfg.Configs
 			}
 
+			// Create styled output
+			out := styled.NewOutput()
+			formatter := output.NewFormatter()
+
 			// Print header
-			cmd.Println()
-			cmd.Println("  File:", filePath)
-			cmd.Println("  Version:", ver)
-			cmd.Println()
+			out.Divider()
+			out.Section("Upload")
+			out.KeyValue("File", filePath)
+			out.KeyValue("Version", ver)
+			out.Divider()
 
 			// Create progress bar
 			pb := progress.New(fileInfo.Size())
-			formatter := output.NewFormatter()
 
 			// Put to selected OBS configs
 			successCount := 0
 			failCount := 0
 
 			for name, obsCfg := range configsToUse {
-				cmd.Printf("  [%s]\n", name)
+				out.Subsection("[" + name + "]")
 
 				client := obs.NewClient(obsCfg.Endpoint, obsCfg.Bucket, obsCfg.AK, obsCfg.SK)
 
@@ -92,18 +97,18 @@ func NewPutCommand() *cobra.Command {
 				cmd.Println()
 
 				if err != nil {
-					cmd.Printf("    Failed: %v\n", err)
+					out.ErrorMsg(fmt.Sprintf("Upload failed: %v", err))
 					failCount++
 					continue
 				}
 
 				if result.Success {
-					// Print result in a nice table format
+					// Print result in a styled table
 					t := table.NewWriter()
 					t.SetOutputMirror(cmd.OutOrStdout())
 					t.AppendHeader(table.Row{"Field", "Value"})
 					t.AppendRow(table.Row{"URL", result.URL})
-					t.AppendRow(table.Row{"Signed URL (24h)", result.SignedURL})
+					t.AppendRow(table.Row{"Signed URL", styled.CleanText(result.SignedURL)})
 					t.AppendRow(table.Row{"MD5", result.MD5})
 					t.AppendRow(table.Row{"Size", formatter.FormatSize(result.Size)})
 					if result.Size > 0 {
@@ -113,22 +118,24 @@ func NewPutCommand() *cobra.Command {
 					}
 					t.Render()
 
-					// Show download commands (use clean URL for display)
-					cleanURL := obs.CleanURL(result.SignedURL)
-					cmd.Println()
-					cmd.Println("  Download:")
-					cmd.Printf("    wget %s -O <filename>\n", result.SignedURL)
-					cmd.Printf("    curl -L %s -o <filename>\n", result.SignedURL)
-					cmd.Printf("  Clean URL:\n    %s\n", cleanURL)
+					// Show download commands
+					out.KeyValue("Clean URL", styled.CleanText(result.SignedURL))
+					out.Divider()
+					out.Println(styled.Style{Fg: styled.ColorCyan}, "Download Commands:")
+					out.Printf(styled.Muted, "  curl -L %s -o <output>\n", result.SignedURL)
+					out.Printf(styled.Muted, "  wget %s -O <output>\n", result.SignedURL)
+					out.Divider()
+					out.SuccessMsg(fmt.Sprintf("Uploaded to %s", obsCfg.Bucket))
 					successCount++
 				} else {
-					cmd.Printf("    Failed: %s\n", result.Error)
+					out.ErrorMsg(result.Error)
 					failCount++
 				}
 				cmd.Println()
 			}
 
-			cmd.Printf("%d completed, %d failed\n", successCount, failCount)
+			out.Section("Summary")
+			out.Summary(successCount, failCount)
 
 			return nil
 		},

@@ -34,6 +34,7 @@ func (f *Formatter) SetOutput(w io.Writer) {
 func (f *Formatter) PrintVersionTable(items []VersionItem) {
 	t := table.NewWriter()
 	t.SetOutputMirror(f.output)
+	t.SetStyle(table.StyleRounded)
 	t.AppendHeader(table.Row{"VERSION", "SIZE", "DATE", "COMMIT", "DOWNLOAD_URL"})
 	for _, item := range items {
 		t.AppendRow(table.Row{item.Version, item.Size, item.Date, item.Commit, item.URL})

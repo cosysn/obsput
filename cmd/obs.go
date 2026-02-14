@@ -6,6 +6,7 @@ import (
 
 	"obsput/pkg/config"
 	"obsput/pkg/obs"
+	"obsput/pkg/styled"
 
 	"github.com/spf13/cobra"
 )
@@ -198,9 +199,12 @@ Returns error if bucket already exists.`,
 				configsToUse = cfg.Configs
 			}
 
-			cmd.Println()
-			cmd.Println("Creating buckets...")
-			cmd.Println()
+			// Create styled output
+			out := styled.NewOutput()
+
+			out.Divider()
+			out.Section("Create Buckets")
+			out.Divider()
 
 			// Create buckets concurrently
 			var mu sync.Mutex
@@ -237,16 +241,17 @@ Returns error if bucket already exists.`,
 			failCount := 0
 			for _, r := range results {
 				if r.Success {
-					cmd.Printf("[%s] Created: %s\n", r.OBSName, r.Bucket)
+					out.SuccessMsg(fmt.Sprintf("%s: %s", r.OBSName, r.Bucket))
 					successCount++
 				} else {
-					cmd.Printf("[%s] Failed: %s (%s)\n", r.OBSName, r.Bucket, r.Error)
+					out.ErrorMsg(fmt.Sprintf("%s: %s (%s)", r.OBSName, r.Bucket, r.Error))
 					failCount++
 				}
 			}
 
-			cmd.Println()
-			cmd.Printf("%d created, %d failed\n", successCount, failCount)
+			out.Section("Summary")
+			out.Summary(successCount, failCount)
+
 			return nil
 		},
 	}
