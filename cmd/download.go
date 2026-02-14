@@ -73,8 +73,8 @@ func NewDownloadCommand() *cobra.Command {
 						out.KeyValue("Size", v.Size)
 						out.Divider()
 						out.Println(styled.Header, "Download Commands:")
-						out.Printf(styled.Muted, "  curl -L %s -o <filename>\n", cleanURL)
-						out.Printf(styled.Muted, "  wget %s -O <filename>\n", cleanURL)
+						out.Printf(styled.Muted, "  curl -k -o <filename> %s\n", cleanURL)
+						out.Printf(styled.Muted, "  wget --no-check-certificate %s\n", cleanURL)
 					}
 				}
 			}
