@@ -74,10 +74,25 @@ func NewOBSListCommand() *cobra.Command {
 				return fmt.Errorf("load config failed: %v\nRun: obsput obs add --name prod --endpoint \"xxx\" --bucket \"xxx\" --ak \"xxx\" --sk \"xxx\"", err)
 			}
 
-			cmd.Println("NAME\tENDPOINT\tBUCKET\tSTATUS")
+			// Create styled output
+			out := styled.NewOutput()
+
+			out.Section("OBS Configurations")
+			out.Divider()
+
 			for _, obs := range cfg.ListOBS() {
-				cmd.Printf("%s\t%s\t%s\tactive\n", obs.Name, obs.Endpoint, obs.Bucket)
+				content := map[string]string{
+					"Name":     obs.Name,
+					"Endpoint": obs.Endpoint,
+					"Bucket":   obs.Bucket,
+					"Status":   "✓ Active",
+				}
+				out.PrintBox("OBS", content)
+				out.Spacer()
 			}
+
+			out.Section(fmt.Sprintf("Total: %d configurations", len(cfg.ListOBS())))
+
 			return nil
 		},
 	}
